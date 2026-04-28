@@ -1,11 +1,11 @@
-"""Multi-git bridge — sync CLAUDE.md files to ~/.cortex/projects/
+"""Multi-git bridge — sync CLAUDE.md files to ~/.synaptex/projects/
 
 Supported git providers:
   forgejo / gitea  — Forgejo/Gitea API v1 (default)
   github           — GitHub REST API v3
   gitlab           — GitLab REST API v4
 
-Set GIT_TYPE in ~/.cortex/.env (default: forgejo).
+Set GIT_TYPE in ~/.synaptex/.env (default: forgejo).
 """
 import hashlib
 import logging
@@ -24,9 +24,9 @@ def _match_patterns(path: str, patterns: list[str]) -> bool:
     return any(_fnmatch(filename, pat) for pat in patterns)
 
 
-CORTEX_DIR = Path.home() / ".cortex"
-PROJECTS_DIR = CORTEX_DIR / "projects"
-SYNC_LOG = CORTEX_DIR / "sync.log"
+SYNAPTEX_DIR = Path.home() / ".synaptex"
+PROJECTS_DIR = SYNAPTEX_DIR / "projects"
+SYNC_LOG = SYNAPTEX_DIR / "sync.log"
 
 # Tailscale IP range (100.x.x.x) removed — not universally applicable
 # Chaque règle : (pattern compilé, raison courte à afficher)
@@ -51,6 +51,7 @@ logger = logging.getLogger(__name__)
 def _log(msg: str) -> None:
     ts = datetime.now().isoformat(timespec="seconds")
     line = f"{ts}  {msg}\n"
+    SYNC_LOG.parent.mkdir(parents=True, exist_ok=True)
     SYNC_LOG.write_text(SYNC_LOG.read_text() + line if SYNC_LOG.exists() else line)
     logger.info(msg)
 
@@ -332,7 +333,7 @@ def sync_all(
     exclude: list[str] | None = None,
     only: str | None = None,
 ) -> dict:
-    """Sync matching files to ~/.cortex/projects/.
+    """Sync matching files to ~/.synaptex/projects/.
 
     Returns: {"synced": [...], "skipped": [...], "warnings": [...]}
     """
