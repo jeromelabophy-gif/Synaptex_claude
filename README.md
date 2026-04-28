@@ -36,7 +36,7 @@ synaptex search "your query"
 
 ---
 
-## Five forge providers, one variable
+## Five git providers, one variable
 
 `GIT_TYPE` in `~/.synaptex/.env`:
 
@@ -78,9 +78,9 @@ You can switch at any time — re-run `synaptex sync` to repopulate the index in
 | Variable | Description | Example |
 |---|---|---|
 | `GIT_TYPE` | Source type | `forgejo` \| `gitea` \| `github` \| `gitlab` \| `local` |
-| `GIT_URL` | Forge base URL (not needed for `github` or `local`) | `http://localhost:3000` |
+| `GIT_URL` | Git provider base URL (not needed for `github` or `local`) | `http://localhost:3000` |
 | `GIT_TOKEN` | API token with read access | `abc123...` |
-| `GIT_USER` | Your username on the forge | `alice` |
+| `GIT_USER` | Your username on the git provider | `alice` |
 | `LOCAL_REPOS_PATH` | Local folder to scan (when `GIT_TYPE=local`) | `~/projects` |
 | `SYNAPTEX_INCLUDE_PATTERNS` | Files to index per repo (comma-separated) | `CLAUDE.md` \| `CLAUDE.md,README.md` \| `*.md` |
 | `SYNAPTEX_SEARCH_BACKEND` | Search engine | `embed` \| `leann` \| `fts5` |
@@ -98,7 +98,7 @@ You can switch at any time — re-run `synaptex sync` to repopulate the index in
 Interactive wizard — generates `~/.synaptex/.env`.
 
 ### `synaptex status`
-Check connectivity: forge, Ollama, embedding model, index, backend.
+Check connectivity: git provider, Ollama, embedding model, index, backend.
 
 ### `synaptex sync`
 Download files matching `SYNAPTEX_INCLUDE_PATTERNS`, generate memory sheets, re-index.
@@ -184,7 +184,7 @@ Available tools directly in Claude Code during a conversation:
 
 <repo>/
 ├── synaptex.py         ← CLI (Click)
-├── forge.py          ← multi-forge bridge (forgejo/gitea/github/gitlab/local)
+├── forge.py          ← multi-git bridge (forgejo/gitea/github/gitlab/local)
 ├── embed.py          ← vector index (sqlite3 + cosine + OpenAI-compatible)
 ├── search.py         ← search backend router (embed/leann/fts5)
 ├── memory.py         ← memory sheets + Mermaid graph
@@ -203,7 +203,7 @@ curl http://localhost:11434/api/tags   # check it's running
 ollama pull nomic-embed-text           # pull the default embed model
 ```
 
-**Forge unreachable**
+**Git provider unreachable**
 - For remote Forgejo/GitLab: check VPN or network connectivity
 - For GitHub: verify your token has `repo` scope
 - For `local`: verify `LOCAL_REPOS_PATH` points to a folder containing `.git/` directories

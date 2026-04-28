@@ -1,6 +1,6 @@
-"""Multi-forge bridge — sync CLAUDE.md files to ~/.cortex/projects/
+"""Multi-git bridge — sync CLAUDE.md files to ~/.cortex/projects/
 
-Supported forges:
+Supported git providers:
   forgejo / gitea  — Forgejo/Gitea API v1 (default)
   github           — GitHub REST API v3
   gitlab           — GitLab REST API v4
