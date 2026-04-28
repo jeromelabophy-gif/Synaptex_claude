@@ -28,7 +28,7 @@ def _cfg() -> dict[str, str]:
     """Merge shell environment + .env (shell takes priority)."""
     env = _load_env()
     for key in (
-        "FORGE_URL", "FORGE_TOKEN", "FORGE_USER", "FORGE_TYPE",
+        "FORGE_URL", "FORGE_TOKEN", "FORGE_USER", "GIT_TYPE",
         "FORGEJO_URL", "FORGEJO_TOKEN", "FORGEJO_USER",  # backwards compat
         "OLLAMA_BASE_URL", "OLLAMA_EMBED_MODEL", "OLLAMA_FALLBACK_MODEL",
         "OLLAMA_API_TYPE", "OLLAMA_API_KEY",
@@ -192,7 +192,7 @@ def init():
     # Write .env
     SYNAPTEX_DIR.mkdir(parents=True, exist_ok=True)
     lines = [
-        f"FORGE_TYPE={forge_type}",
+        f"GIT_TYPE={forge_type}",
     ]
     if forge_url:
         lines.append(f"FORGE_URL={forge_url}")
@@ -252,7 +252,7 @@ def sync(dry_run: bool, no_index: bool, exclude: tuple, only: str | None):
     from memory import generate_memory_sheet
 
     cfg = _cfg()
-    forge_type = cfg.get("FORGE_TYPE", "forgejo")
+    forge_type = cfg.get("GIT_TYPE", "forgejo")
     forge_url = cfg.get("FORGE_URL", "")
     forge_token = cfg.get("FORGE_TOKEN", "")
     forge_user = cfg.get("FORGE_USER", "")
@@ -372,7 +372,7 @@ def status():
 
     click.echo("=== Synaptex Status ===\n")
 
-    forge_type = cfg.get("FORGE_TYPE", "forgejo")
+    forge_type = cfg.get("GIT_TYPE", "forgejo")
     token = cfg.get("FORGE_TOKEN", "")
     click.echo(f"Forge type    : {forge_type}")
     click.echo(f"Forge URL     : {cfg.get('FORGE_URL', '⚠ not set')}")
@@ -409,7 +409,7 @@ def status():
         from embed import INDEX_DB
         click.echo(f"\nIndex DB      : {INDEX_DB} ({'✓ exists' if INDEX_DB.exists() else '⚠ empty'})")
 
-    if cfg.get("FORGE_TYPE") == "local":
+    if cfg.get("GIT_TYPE") == "local":
         click.echo(f"Local repos   : {cfg.get('LOCAL_REPOS_PATH', '⚠ not set')}")
 
     projects = list((SYNAPTEX_DIR / "projects").iterdir()) if (SYNAPTEX_DIR / "projects").exists() else []

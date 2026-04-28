@@ -57,7 +57,7 @@ Forge API / local disk → forge.py  → ~/.synaptex/projects/<repo>/CLAUDE.md
 
 - **`embed.py` instead of leann-core (default)**: leann-core pulls PyTorch + CUDA (~3GB), unusable on low-disk ARM devices. The default index is sqlite3 + struct float32 + pure-Python cosine. Chunking (400 words / 50 overlap) covers long CLAUDE.md files; search deduplicates to one best chunk per document.
 - **`search.py` as router**: `SYNAPTEX_SEARCH_BACKEND=embed|leann|fts5` selects the backend at runtime. leann is imported lazily (no startup cost when not used). fts5 is fully offline.
-- **`forge.py` multi-forge + local**: `FORGE_TYPE=local` scans `LOCAL_REPOS_PATH` for `.git/` directories and reads files directly — no network, no token.
+- **`forge.py` multi-forge + local**: `GIT_TYPE=local` scans `LOCAL_REPOS_PATH` for `.git/` directories and reads files directly — no network, no token.
 - **`mcp_cortex.py` stdio only**: Claude Code requires stdio transport for local MCP servers.
 - **No `python-dotenv`**: `.env` is parsed manually in `_load_env()`. `OLLAMA_HOST` (exported by `ollama_select` in `.bashrc` if present) overrides `OLLAMA_BASE_URL`. Source `.bashrc` before calling `cortex` manually if you use `ollama_select`.
 - **qmd via Bun**: `@tobilu/qmd` is TypeScript, requires Node ≥ 22 or Bun. Bun has native ARM64 binaries.
@@ -67,11 +67,11 @@ Forge API / local disk → forge.py  → ~/.synaptex/projects/<repo>/CLAUDE.md
 `~/.synaptex/.env` (chmod 600, not in repo):
 
 ```env
-FORGE_TYPE=forgejo              # forgejo | gitea | github | gitlab | local
+GIT_TYPE=forgejo              # forgejo | gitea | github | gitlab | local
 FORGE_URL=http://<host>:3000    # not needed for github or local
 FORGE_TOKEN=<read-only-token>
 FORGE_USER=<username>
-LOCAL_REPOS_PATH=~/projects     # used when FORGE_TYPE=local
+LOCAL_REPOS_PATH=~/projects     # used when GIT_TYPE=local
 
 SYNAPTEX_SEARCH_BACKEND=embed     # embed | leann | fts5
 

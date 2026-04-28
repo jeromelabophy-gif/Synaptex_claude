@@ -5,7 +5,7 @@ Supported forges:
   github           — GitHub REST API v3
   gitlab           — GitLab REST API v4
 
-Set FORGE_TYPE in ~/.cortex/.env (default: forgejo).
+Set GIT_TYPE in ~/.cortex/.env (default: forgejo).
 """
 import hashlib
 import logging
