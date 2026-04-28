@@ -28,7 +28,7 @@ def _cfg() -> dict[str, str]:
     """Merge shell environment + .env (shell takes priority)."""
     env = _load_env()
     for key in (
-        "FORGE_URL", "FORGE_TOKEN", "FORGE_USER", "GIT_TYPE",
+        "GIT_URL", "GIT_TOKEN", "GIT_USER", "GIT_TYPE",
         "FORGEJO_URL", "FORGEJO_TOKEN", "FORGEJO_USER",  # backwards compat
         "OLLAMA_BASE_URL", "OLLAMA_EMBED_MODEL", "OLLAMA_FALLBACK_MODEL",
         "OLLAMA_API_TYPE", "OLLAMA_API_KEY",
@@ -39,8 +39,8 @@ def _cfg() -> dict[str, str]:
     # ollama_select exports OLLAMA_HOST → overrides OLLAMA_BASE_URL
     if "OLLAMA_HOST" in os.environ:
         env["OLLAMA_BASE_URL"] = os.environ["OLLAMA_HOST"]
-    # FORGEJO_* → FORGE_* backwards compat
-    for old, new in [("FORGEJO_URL", "FORGE_URL"), ("FORGEJO_TOKEN", "FORGE_TOKEN"), ("FORGEJO_USER", "FORGE_USER")]:
+    # FORGEJO_* → GIT_* backwards compat
+    for old, new in [("FORGEJO_URL", "GIT_URL"), ("FORGEJO_TOKEN", "GIT_TOKEN"), ("FORGEJO_USER", "GIT_USER")]:
         if old in env and new not in env:
             env[new] = env[old]
     return env
@@ -83,7 +83,7 @@ def init():
 
     if ENV_FILE.exists():
         existing = _load_env()
-        if existing.get("FORGE_TOKEN") or existing.get("FORGEJO_TOKEN") or existing.get("LOCAL_REPOS_PATH"):
+        if existing.get("GIT_TOKEN") or existing.get("FORGEJO_TOKEN") or existing.get("LOCAL_REPOS_PATH"):
             if not click.confirm(".env already configured. Overwrite?", default=False):
                 click.echo("Aborted.")
                 return
@@ -195,11 +195,11 @@ def init():
         f"GIT_TYPE={forge_type}",
     ]
     if forge_url:
-        lines.append(f"FORGE_URL={forge_url}")
+        lines.append(f"GIT_URL={forge_url}")
     if forge_token:
-        lines.append(f"FORGE_TOKEN={forge_token}")
+        lines.append(f"GIT_TOKEN={forge_token}")
     if forge_user:
-        lines.append(f"FORGE_USER={forge_user}")
+        lines.append(f"GIT_USER={forge_user}")
     lines += [
         f"OLLAMA_BASE_URL={ollama_url}",
         f"OLLAMA_API_TYPE={api_type}",
@@ -253,15 +253,15 @@ def sync(dry_run: bool, no_index: bool, exclude: tuple, only: str | None):
 
     cfg = _cfg()
     forge_type = cfg.get("GIT_TYPE", "forgejo")
-    forge_url = cfg.get("FORGE_URL", "")
-    forge_token = cfg.get("FORGE_TOKEN", "")
-    forge_user = cfg.get("FORGE_USER", "")
+    forge_url = cfg.get("GIT_URL", "")
+    forge_token = cfg.get("GIT_TOKEN", "")
+    forge_user = cfg.get("GIT_USER", "")
     local_path = cfg.get("LOCAL_REPOS_PATH", "")
     raw_patterns = cfg.get("SYNAPTEX_INCLUDE_PATTERNS", "CLAUDE.md")
     include_patterns = [p.strip() for p in raw_patterns.split(",") if p.strip()]
 
     if forge_type != "local":
-        for label, val in [("FORGE_URL / FORGEJO_URL", forge_url), ("FORGE_TOKEN / FORGEJO_TOKEN", forge_token)]:
+        for label, val in [("GIT_URL / FORGEJO_URL", forge_url), ("GIT_TOKEN / FORGEJO_TOKEN", forge_token)]:
             if not val or val in ("xxx", "your-token-here"):
                 click.echo(
                     f"❌ {label} not configured in {ENV_FILE}\n"
@@ -373,9 +373,9 @@ def status():
     click.echo("=== Synaptex Status ===\n")
 
     forge_type = cfg.get("GIT_TYPE", "forgejo")
-    token = cfg.get("FORGE_TOKEN", "")
+    token = cfg.get("GIT_TOKEN", "")
     click.echo(f"Forge type    : {forge_type}")
-    click.echo(f"Forge URL     : {cfg.get('FORGE_URL', '⚠ not set')}")
+    click.echo(f"Forge URL     : {cfg.get('GIT_URL', '⚠ not set')}")
     click.echo(f"Forge token   : {'✓ set' if token and token not in ('xxx', 'your-token-here') else '⚠ not configured'}")
 
     host = cfg.get("OLLAMA_BASE_URL", "")

@@ -68,9 +68,9 @@ Forge API / local disk → forge.py  → ~/.synaptex/projects/<repo>/CLAUDE.md
 
 ```env
 GIT_TYPE=forgejo              # forgejo | gitea | github | gitlab | local
-FORGE_URL=http://<host>:3000    # not needed for github or local
-FORGE_TOKEN=<read-only-token>
-FORGE_USER=<username>
+GIT_URL=http://<host>:3000    # not needed for github or local
+GIT_TOKEN=<read-only-token>
+GIT_USER=<username>
 LOCAL_REPOS_PATH=~/projects     # used when GIT_TYPE=local
 
 SYNAPTEX_SEARCH_BACKEND=embed     # embed | leann | fts5
