@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+*.db
+*.sqlite
+prompt_cortex.md
+plan_*.md
+Proposition*.md
+Prompt_*.md
+docs/superpowers/specs/
