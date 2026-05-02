@@ -30,7 +30,7 @@ synaptex search "your query"
 
 ## Prerequisites
 
-- Python 3.10+ with `pip install requests`
+- Python 3.10+ with `pip install -r requirements.txt`
 - A repo source (one of: Forgejo, Gitea, GitHub, GitLab, or local folders)
 - For semantic search: [Ollama](https://ollama.com) (local or remote) with an embedding model pulled — **not required** if you use the `fts5` backend
 
