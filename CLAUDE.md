@@ -71,8 +71,10 @@ FORGE_TYPE=forgejo              # forgejo | gitea | github | gitlab | local
 FORGE_URL=http://<host>:3000    # not needed for github or local
 FORGE_TOKEN=<read-only-token>
 FORGE_USER=<username>
-LOCAL_REPOS_PATH=~/projects     # used when FORGE_TYPE=local
+LOCAL_REPOS_PATH=~/projects     # used when FORGE_TYPE=local; ":" separates multiple paths
 
+SYNAPTEX_INCLUDE_PATTERNS=CLAUDE.md,project.md  # comma-separated globs; see _PATTERN_CHOICES
+SYNAPTEX_EXCLUDE_DIRS=Drive-Archive,Secrets,Templates  # (planned) dirs to skip during local scan
 SYNAPTEX_SEARCH_BACKEND=embed     # embed | leann | fts5
 
 OLLAMA_BASE_URL=http://<ollama-host>:11434
@@ -81,6 +83,39 @@ OLLAMA_EMBED_MODEL=nomic-embed-text
 # OLLAMA_FALLBACK_MODEL=
 # OLLAMA_API_KEY=
 ```
+
+## Planned Enhancements
+
+### 1. `project.md` pattern (Obsidian vault use case)
+
+`_PATTERN_CHOICES` in `synaptex.py:61` — add option 5: `CLAUDE.md,project.md` (Obsidian vault).
+Rationale: Obsidian projects use `project.md` as the main overview file alongside `CLAUDE.md`.
+Update `_PATTERN_LABELS` accordingly (shift old option 5 `*.md` to 6, add option 7 "Personnalisé").
+
+### 2. `SYNAPTEX_EXCLUDE_DIRS` — persistent directory exclusion
+
+Current gap: `--exclude` CLI flag skips repos by **name**, but has no env-persistent equivalent,
+and cannot skip subdirectories **within** a scanned path (e.g. `Drive-Archive/` inside `ObsidianVault/`).
+
+**Implementation plan:**
+
+- `synaptex.py:260` — read `SYNAPTEX_EXCLUDE_DIRS` from cfg, split by `,`
+- `synaptex.py:280-290` — pass `exclude_dirs=exclude_dirs` to `sync_all()`
+- `forge.py:381` — add `exclude_dirs: list[str] | None = None` to `sync_all()` signature
+- `forge.py:401` — pass `exclude_dirs` to `_local_sync()`
+- `forge.py:238` — add `exclude_dirs: list[str] | None = None` to `_local_sync()` signature
+- `forge.py:276-282` — in the rglob loop, skip files whose path parts intersect `exclude_dirs`:
+  ```python
+  _exclude_dirs = set(exclude_dirs or [])
+  for pat in patterns:
+      for f in base.rglob(pat):
+          if not f.is_file() or ".git" in f.parts:
+              continue
+          if _exclude_dirs & set(f.parts):   # skip if any ancestor dir is excluded
+              continue
+          ...
+  ```
+- `.env.example` — document `SYNAPTEX_EXCLUDE_DIRS` with example value
 
 ## Registered MCPs (scope user)
 
