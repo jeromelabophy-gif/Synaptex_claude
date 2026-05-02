@@ -370,6 +370,37 @@ def search(query: str, top: int):
 
 
 @cli.command()
+@click.option("--all", "all_caches", is_flag=True, help="Purge projects/ ET memory/")
+@click.option("--memory", "only_memory", is_flag=True, help="Purge uniquement memory/")
+@click.option("--projects", "only_projects", is_flag=True, help="Purge uniquement projects/")
+def clean(all_caches: bool, only_memory: bool, only_projects: bool):
+    """Purge les caches locaux de Synaptex."""
+    import shutil
+
+    if not any([all_caches, only_memory, only_projects]):
+        click.echo("Précise ce que tu veux purger :")
+        click.echo("  synaptex clean --all       — projects/ + memory/")
+        click.echo("  synaptex clean --projects  — projets synced uniquement")
+        click.echo("  synaptex clean --memory    — fiches mémoire uniquement")
+        return
+
+    targets = []
+    if all_caches or only_projects:
+        targets.append(SYNAPTEX_DIR / "projects")
+    if all_caches or only_memory:
+        targets.append(SYNAPTEX_DIR / "memory")
+
+    for target in targets:
+        if target.exists():
+            count = sum(1 for _ in target.rglob("*") if _.is_file())
+            shutil.rmtree(target)
+            target.mkdir(parents=True, exist_ok=True)
+            click.echo(f"  ✓ {target.name}/ purgé ({count} fichiers supprimés)")
+        else:
+            click.echo(f"  = {target.name}/ déjà vide")
+
+
+@cli.command()
 def status():
     """Show Synaptex infrastructure status."""
     import requests
