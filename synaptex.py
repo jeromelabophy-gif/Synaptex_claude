@@ -32,7 +32,7 @@ def _cfg() -> dict[str, str]:
         "FORGEJO_URL", "FORGEJO_TOKEN", "FORGEJO_USER",  # backwards compat
         "OLLAMA_BASE_URL", "OLLAMA_EMBED_MODEL", "OLLAMA_FALLBACK_MODEL",
         "OLLAMA_API_TYPE", "OLLAMA_API_KEY",
-        "SYNAPTEX_INCLUDE_PATTERNS", "LOCAL_REPOS_PATH", "SYNAPTEX_SEARCH_BACKEND",
+        "SYNAPTEX_INCLUDE_PATTERNS", "SYNAPTEX_EXCLUDE_DIRS", "LOCAL_REPOS_PATH", "SYNAPTEX_SEARCH_BACKEND",
     ):
         if key in os.environ:
             env[key] = os.environ[key]
@@ -191,6 +191,18 @@ def init():
     else:
         include_patterns = _PATTERN_CHOICES[pattern_choice]
 
+    # Exclude dirs
+    click.echo("\n--- Dossiers à exclure du scan ---")
+    click.echo("  Ex: node_modules,Drive-Archive,Secrets,Templates,.vscode-server")
+    click.echo("  (les dossiers cachés .xxx sont exclus par défaut)")
+    exclude_dirs_input = click.prompt(
+        "Dossiers à exclure (séparés par virgule, Enter pour aucun)",
+        default="",
+    )
+    exclude_dirs_val = ",".join(
+        d.strip() for d in exclude_dirs_input.split(",") if d.strip()
+    )
+
     # Write .env
     SYNAPTEX_DIR.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -211,6 +223,8 @@ def init():
     ]
     if local_repos_path:
         lines.append(f"LOCAL_REPOS_PATH={local_repos_path}")
+    if exclude_dirs_val:
+        lines.append(f"SYNAPTEX_EXCLUDE_DIRS={exclude_dirs_val}")
     if fallback_model:
         lines.append(f"OLLAMA_FALLBACK_MODEL={fallback_model}")
     if api_key:
@@ -230,6 +244,8 @@ def init():
         click.echo(f"  Forge token    : ✓ configuré")
         click.echo(f"  Forge user     : {forge_user}")
     click.echo(f"  Include files  : {include_patterns}")
+    if exclude_dirs_val:
+        click.echo(f"  Exclude dirs   : {exclude_dirs_val}")
     click.echo(f"  Embedding URL  : {ollama_url}")
     click.echo(f"  Embed model    : {embed_model}")
     click.echo(f"  Search backend : {search_backend}")
@@ -247,7 +263,8 @@ def init():
               help="Exclure des repos par nom (répétable). Ex: --exclude tests --exclude sandbox")
 @click.option("--only", default=None, metavar="REPO",
               help="Ne syncer qu'un seul repo. Ex: --only mon-projet")
-def sync(dry_run: bool, no_index: bool, exclude: tuple, only: str | None):
+@click.option("--verbose", "-v", is_flag=True, help="Afficher les fichiers skippés et la raison")
+def sync(dry_run: bool, no_index: bool, exclude: tuple, only: str | None, verbose: bool):
     """Sync files from the git provider and re-index."""
     from forge import sync_all
     from search import rebuild_index
@@ -292,6 +309,7 @@ def sync(dry_run: bool, no_index: bool, exclude: tuple, only: str | None):
         exclude=list(exclude),
         exclude_dirs=exclude_dirs,
         only=only,
+        verbose=verbose,
     )
 
     click.echo(f"  ✓ {len(result['synced'])} files synced")

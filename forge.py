@@ -242,6 +242,7 @@ def _local_sync(
     exclude: list[str] | None = None,
     only: str | None = None,
     exclude_dirs: list[str] | None = None,
+    verbose: bool = False,
 ) -> dict:
     """Scan one or more local paths (`:`-separated) for repos and read matching files.
 
@@ -279,14 +280,22 @@ def _local_sync(
                 if not f.is_file() or ".git" in f.parts:
                     continue
                 if _exclude_dirs & set(f.parts):
+                    matched_dir = (_exclude_dirs & set(f.parts)).pop()
+                    if verbose:
+                        _log(f"  [skip] {f} — excluded dir: {matched_dir}")
                     continue
                 rel_parts = f.relative_to(base).parts
-                if any(p.startswith(".") for p in rel_parts[:-1]):
+                hidden = next((p for p in rel_parts[:-1] if p.startswith(".")), None)
+                if hidden:
+                    if verbose:
+                        _log(f"  [skip] {f} — hidden dir: {hidden}")
                     continue
                 root = next((a for a in [f.parent, *f.parents] if a in git_roots), None)
                 if root is None:
                     root = f.parent
                 repo_files.setdefault(root, []).append(f)
+                if verbose:
+                    _log(f"  [ok]   {f}")
 
     _log(f"  {len(repo_files)} repos found across {len(bases)} path(s)")
 
@@ -401,6 +410,7 @@ def sync_all(
     exclude: list[str] | None = None,
     exclude_dirs: list[str] | None = None,
     only: str | None = None,
+    verbose: bool = False,
 ) -> dict:
     """Sync matching files to ~/.synaptex/projects/.
 
@@ -411,7 +421,7 @@ def sync_all(
     _log(f"{'[DRY-RUN] ' if dry_run else ''}sync_all started — {forge_type}")
 
     if forge_type == "local":
-        result = _local_sync(local_repos_path or "~/projects", dry_run, patterns, _exclude, only, exclude_dirs)
+        result = _local_sync(local_repos_path or "~/projects", dry_run, patterns, _exclude, only, exclude_dirs, verbose)
         _log(
             f"sync_all done — {len(result['synced'])} synced, "
             f"{len(result['skipped'])} skipped, {len(result['warnings'])} warnings"
