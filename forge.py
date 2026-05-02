@@ -292,7 +292,7 @@ def _local_sync(
             (dest.parent / f"{dest.name}.sha256").write_text(checksum)
             _log(f"  ✓ {name}/{path}")
             for w in warnings:
-                _log(f"  ⚠ {w}")
+                _log(f"  ℹ {w}")
             result["synced"].append({"repo": name, "path": path, "checksum": checksum})
 
     return result
@@ -306,16 +306,48 @@ def _sha256(content: str) -> str:
     return hashlib.sha256(content.encode()).hexdigest()
 
 
+_PLACEHOLDER_VALUES = {
+    "", "xxx", "your-token-here", "your-username", "changeme",
+    "todo", "tbd", "fixme", "...", "…", "none", "null",
+}
+_KV_RE = re.compile(r"^\s*[#-]?\s*([A-Z_][A-Z0-9_]*)\s*[:=]\s*(.*?)\s*$")
+
+
+def _looks_like_placeholder(val: str) -> bool:
+    """Heuristique : la valeur est-elle vide ou un placeholder évident ?"""
+    v = val.strip().strip("\"'`")
+    if not v or v.lower() in _PLACEHOLDER_VALUES:
+        return True
+    # <token>, ${TOKEN}, {{token}}, abc... (ellipsis)
+    if v.startswith(("<", "${", "{{")) and v.endswith((">", "}", "}}")):
+        return True
+    if v.endswith(("...", "…")):
+        return True
+    return False
+
+
 def _sanitise_check(content: str, repo: str, path: str) -> list[str]:
-    warnings = []
+    """Heuristique douce : signale les valeurs qui *ressemblent* à un secret.
+    Ne lève pas d'alerte sur la simple mention d'un nom (ex. `API_KEY` dans
+    un commentaire) ni sur un placeholder (`KEY=your-token-here`).
+    Synaptex donne un conseil — pas un audit de sécurité.
+    """
+    notices = []
     for line_no, line in enumerate(content.splitlines(), 1):
         for pattern, reason in _SECRET_RULES:
-            if pattern.search(line):
-                warnings.append(
-                    f"{repo}/{path}:{line_no} — {reason} détecté ({pattern.pattern[:30]}…) : {line.strip()[:80]}"
-                )
-                break  # une seule raison par ligne
-    return warnings
+            if not pattern.search(line):
+                continue
+            # PEM block et IP locale : toujours signaler — sans format KV
+            literal = "BEGIN" in pattern.pattern or "192" in pattern.pattern
+            if not literal:
+                m = _KV_RE.match(line)
+                if not m or _looks_like_placeholder(m.group(2)):
+                    break  # mention seule ou placeholder — on ignore
+            notices.append(
+                f"{repo}/{path}:{line_no} — {reason} potentielle : {line.strip()[:80]}"
+            )
+            break  # une seule raison par ligne
+    return notices
 
 
 # ---------------------------------------------------------------------------
@@ -407,7 +439,7 @@ def sync_all(
             (dest.parent / f"{dest.name}.sha256").write_text(checksum)
             _log(f"  ✓ {name}/{path} sha256={checksum[:12]}")
             for w in warnings:
-                _log(f"  ⚠ {w}")
+                _log(f"  ℹ {w}")
             result["synced"].append({"repo": name, "path": path, "checksum": checksum})
 
     _log(
