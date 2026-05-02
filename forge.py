@@ -280,6 +280,9 @@ def _local_sync(
                     continue
                 if _exclude_dirs & set(f.parts):
                     continue
+                rel_parts = f.relative_to(base).parts
+                if any(p.startswith(".") for p in rel_parts[:-1]):
+                    continue
                 root = next((a for a in [f.parent, *f.parents] if a in git_roots), None)
                 if root is None:
                     root = f.parent
@@ -371,6 +374,9 @@ def _sanitise_check(content: str, repo: str, path: str) -> list[str]:
                 m = _KV_RE.match(line)
                 if not m or _looks_like_placeholder(m.group(2)):
                     break  # mention seule ou placeholder — on ignore
+                # Le pattern doit matcher le NOM de la variable, pas la valeur
+                if not pattern.search(m.group(1)):
+                    break
             notices.append(
                 f"{repo}/{path}:{line_no} — {reason} potentielle : {line.strip()[:80]}"
             )
