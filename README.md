@@ -83,6 +83,7 @@ You can switch at any time — re-run `synaptex sync` to repopulate the index in
 | `FORGE_USER` | Your username on the git provider | `alice` |
 | `LOCAL_REPOS_PATH` | Local folder to scan (when `FORGE_TYPE=local`) | `~/projects` |
 | `SYNAPTEX_INCLUDE_PATTERNS` | Files to index per repo (comma-separated) | `CLAUDE.md` \| `CLAUDE.md,README.md` \| `*.md` |
+| `SYNAPTEX_EXCLUDE_DIRS` | Local dirs to skip during scan (comma-separated) | `Drive-Archive,Secrets,Templates` |
 | `SYNAPTEX_SEARCH_BACKEND` | Search engine | `embed` \| `leann` \| `fts5` |
 | `OLLAMA_BASE_URL` | Ollama or OpenAI-compatible API | `http://localhost:11434` |
 | `OLLAMA_API_TYPE` | API format | `ollama` \| `openai` |
@@ -98,7 +99,7 @@ You can switch at any time — re-run `synaptex sync` to repopulate the index in
 Interactive wizard — generates `~/.synaptex/.env`.
 
 ### `synaptex status`
-Check connectivity: git provider, Ollama, embedding model, index, backend.
+Check connectivity: git provider, Ollama, embedding model, index, backend, memory sheets, projects synced, last sync timestamp.
 
 ### `synaptex sync`
 Download files matching `SYNAPTEX_INCLUDE_PATTERNS`, generate memory sheets, re-index.
@@ -107,9 +108,19 @@ Download files matching `SYNAPTEX_INCLUDE_PATTERNS`, generate memory sheets, re-
 synaptex sync --dry-run              # preview without writing
 synaptex sync                        # full sync
 synaptex sync --no-index             # sync without re-indexing
+synaptex sync --verbose              # log each file with [ok] or [skip] (reason)
 synaptex sync --only mon-projet      # sync a single repo
 synaptex sync --exclude tests        # exclude repos by name (repeatable)
 synaptex sync --exclude ci --exclude sandbox
+```
+
+### `synaptex clean`
+Purge local caches (`~/.synaptex/projects/` and/or `~/.synaptex/memory/`).
+
+```bash
+synaptex clean --all       # purge projects + memory
+synaptex clean --projects  # purge projects only (memory kept)
+synaptex clean --memory    # purge memory only (projects kept)
 ```
 
 ### `synaptex search`
