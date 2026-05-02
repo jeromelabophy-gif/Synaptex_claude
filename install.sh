@@ -45,12 +45,12 @@ echo "✓ ~/.synaptex/ created"
 if [[ ! -f "$SYNAPTEX_DIR/.env" ]] || grep -q "your-token-here" "$SYNAPTEX_DIR/.env"; then
     cat > "$SYNAPTEX_DIR/.env" << 'ENVEOF'
 # Forge configuration
-# GIT_TYPE: forgejo | gitea | github | gitlab | local  (default: forgejo)
-GIT_TYPE=forgejo
-GIT_URL=http://localhost:3000
-GIT_TOKEN=your-token-here
-GIT_USER=your-username
-# LOCAL_REPOS_PATH: used when GIT_TYPE=local (no API needed)
+# FORGE_TYPE: forgejo | gitea | github | gitlab | local  (default: forgejo)
+FORGE_TYPE=forgejo
+FORGE_URL=http://localhost:3000
+FORGE_TOKEN=your-token-here
+FORGE_USER=your-username
+# LOCAL_REPOS_PATH: used when FORGE_TYPE=local (no API needed)
 # LOCAL_REPOS_PATH=~/projects
 
 # Search backend
@@ -350,7 +350,7 @@ echo "=== Installation complete ==="
 echo ""
 echo "Next steps:"
 echo "  1. Run 'synaptex init'       — interactive setup wizard"
-echo "     or edit ~/.synaptex/.env  — fill in GIT_TYPE, GIT_URL, token"
+echo "     or edit ~/.synaptex/.env  — fill in FORGE_TYPE, FORGE_URL, token"
 echo "  2. synaptex status           — verify connectivity"
 echo "  3. synaptex sync --dry-run   — preview sync"
 echo "  4. synaptex sync             — full sync + index"

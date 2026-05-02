@@ -38,7 +38,7 @@ synaptex search "your query"
 
 ## Five git providers, one variable
 
-`GIT_TYPE` in `~/.synaptex/.env`:
+`FORGE_TYPE` in `~/.synaptex/.env`:
 
 | Value | API used | Token scope |
 |---|---|---|
@@ -77,11 +77,11 @@ You can switch at any time — re-run `synaptex sync` to repopulate the index in
 
 | Variable | Description | Example |
 |---|---|---|
-| `GIT_TYPE` | Source type | `forgejo` \| `gitea` \| `github` \| `gitlab` \| `local` |
-| `GIT_URL` | Git provider base URL (not needed for `github` or `local`) | `http://localhost:3000` |
-| `GIT_TOKEN` | API token with read access | `abc123...` |
-| `GIT_USER` | Your username on the git provider | `alice` |
-| `LOCAL_REPOS_PATH` | Local folder to scan (when `GIT_TYPE=local`) | `~/projects` |
+| `FORGE_TYPE` | Source type | `forgejo` \| `gitea` \| `github` \| `gitlab` \| `local` |
+| `FORGE_URL` | Git provider base URL (not needed for `github` or `local`) | `http://localhost:3000` |
+| `FORGE_TOKEN` | API token with read access | `abc123...` |
+| `FORGE_USER` | Your username on the git provider | `alice` |
+| `LOCAL_REPOS_PATH` | Local folder to scan (when `FORGE_TYPE=local`) | `~/projects` |
 | `SYNAPTEX_INCLUDE_PATTERNS` | Files to index per repo (comma-separated) | `CLAUDE.md` \| `CLAUDE.md,README.md` \| `*.md` |
 | `SYNAPTEX_SEARCH_BACKEND` | Search engine | `embed` \| `leann` \| `fts5` |
 | `OLLAMA_BASE_URL` | Ollama or OpenAI-compatible API | `http://localhost:11434` |

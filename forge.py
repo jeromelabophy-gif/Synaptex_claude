@@ -5,7 +5,7 @@ Supported git providers:
   github           — GitHub REST API v3
   gitlab           — GitLab REST API v4
 
-Set GIT_TYPE in ~/.synaptex/.env (default: forgejo).
+Set FORGE_TYPE in ~/.synaptex/.env (default: forgejo).
 """
 import hashlib
 import logging
@@ -31,7 +31,7 @@ SYNC_LOG = SYNAPTEX_DIR / "sync.log"
 # Tailscale IP range (100.x.x.x) removed — not universally applicable
 # Chaque règle : (pattern compilé, raison courte à afficher)
 _SECRET_RULES: list[tuple[re.Pattern, str]] = [
-    (re.compile(r"FORGEJO_TOKEN|GITHUB_TOKEN|GITLAB_TOKEN", re.IGNORECASE), "token forge"),
+    (re.compile(r"FORGE_TOKEN|FORGEJO_TOKEN|GITHUB_TOKEN|GITLAB_TOKEN", re.IGNORECASE), "token git"),
     (re.compile(r"AWS_[A-Z_]+", re.IGNORECASE), "credential AWS"),
     (re.compile(r"PASSWORD", re.IGNORECASE), "mot de passe"),
     (re.compile(r"SECRET", re.IGNORECASE), "variable secrète"),
