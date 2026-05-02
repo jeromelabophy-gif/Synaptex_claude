@@ -20,7 +20,7 @@ STACK_PATTERNS = {
     "Raspberry Pi": re.compile(r"\braspberry\b|\brpi\b|\bpi\b.*gpio|gpio.*\bpi\b", re.I),
 }
 
-DEP_PATTERN = re.compile(r"\[\[([^\]]+)\]\]|dépend[^:]*:\s*(.+)|depends[^:]*:\s*(.+)", re.I)
+DEP_PATTERN = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]")
 
 
 def _detect_stack(content: str) -> list[str]:
@@ -30,12 +30,11 @@ def _detect_stack(content: str) -> list[str]:
 def _detect_deps(content: str) -> list[str]:
     deps = set()
     for m in DEP_PATTERN.finditer(content):
-        ref = m.group(1) or m.group(2) or m.group(3)
+        ref = m.group(1)
         if ref:
-            for d in re.split(r"[,;]", ref):
-                d = d.strip().strip("[]")
-                if d:
-                    deps.add(d)
+            d = ref.strip()
+            if d:
+                deps.add(d)
     return sorted(deps)
 
 
