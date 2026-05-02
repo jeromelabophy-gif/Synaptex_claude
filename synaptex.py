@@ -335,6 +335,14 @@ def sync(dry_run: bool, no_index: bool, exclude: tuple, only: str | None):
                 click.echo(f"  ✓ {count} documents indexés (fallback: {backend_used})")
             else:
                 click.echo(f"  ✓ {count} documents indexés ({backend_used})")
+
+            # Résumé final
+            synced_count = len(result["synced"])
+            click.echo(
+                f"\n✓ Sync terminé : {synced_count} fichiers | "
+                f"{count} docs indexés ({backend_used}) | "
+                f"map: synaptex map"
+            )
         except Exception as exc:
             click.echo(f"  ✗ Indexation échouée : {exc}", err=True)
             sys.exit(1)
