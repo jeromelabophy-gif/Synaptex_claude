@@ -63,15 +63,17 @@ _PATTERN_CHOICES = {
     "2": "CLAUDE.md,README.md",
     "3": "CLAUDE.md,README.md,MEMORY.md",
     "4": "CLAUDE.md,README.md,MEMORY.md,GRAPH_REPORT.md",
-    "5": "*.md",
+    "5": "CLAUDE.md,project.md",
+    "6": "*.md",
 }
 _PATTERN_LABELS = {
     "1": "CLAUDE.md uniquement (défaut)",
     "2": "CLAUDE.md + README.md",
     "3": "CLAUDE.md + README.md + MEMORY.md",
     "4": "CLAUDE.md + README.md + MEMORY.md + GRAPH_REPORT.md",
-    "5": "Tous les fichiers .md",
-    "6": "Personnalisé",
+    "5": "CLAUDE.md + project.md (Obsidian vault)",
+    "6": "Tous les fichiers .md",
+    "7": "Personnalisé",
 }
 
 
@@ -259,6 +261,8 @@ def sync(dry_run: bool, no_index: bool, exclude: tuple, only: str | None):
     local_path = cfg.get("LOCAL_REPOS_PATH", "")
     raw_patterns = cfg.get("SYNAPTEX_INCLUDE_PATTERNS", "CLAUDE.md")
     include_patterns = [p.strip() for p in raw_patterns.split(",") if p.strip()]
+    raw_exclude_dirs = cfg.get("SYNAPTEX_EXCLUDE_DIRS", "")
+    exclude_dirs = [d.strip() for d in raw_exclude_dirs.split(",") if d.strip()]
 
     if forge_type != "local":
         for label, val in [("FORGE_URL / FORGEJO_URL", forge_url), ("FORGE_TOKEN / FORGEJO_TOKEN", forge_token)]:
@@ -286,6 +290,7 @@ def sync(dry_run: bool, no_index: bool, exclude: tuple, only: str | None):
         local_repos_path=local_path,
         include_patterns=include_patterns,
         exclude=list(exclude),
+        exclude_dirs=exclude_dirs,
         only=only,
     )
 

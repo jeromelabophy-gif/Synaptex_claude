@@ -241,6 +241,7 @@ def _local_sync(
     include_patterns: list[str] | None = None,
     exclude: list[str] | None = None,
     only: str | None = None,
+    exclude_dirs: list[str] | None = None,
 ) -> dict:
     """Scan one or more local paths (`:`-separated) for repos and read matching files.
 
@@ -249,6 +250,7 @@ def _local_sync(
     """
     patterns = include_patterns or ["CLAUDE.md"]
     _exclude = exclude or []
+    _exclude_dirs = set(exclude_dirs or [])
     result: dict = {"synced": [], "skipped": [], "warnings": []}
 
     raw_paths = [p.strip() for p in str(repos_path).split(":") if p.strip()]
@@ -275,6 +277,8 @@ def _local_sync(
         for pat in patterns:
             for f in base.rglob(pat):
                 if not f.is_file() or ".git" in f.parts:
+                    continue
+                if _exclude_dirs & set(f.parts):
                     continue
                 root = next((a for a in [f.parent, *f.parents] if a in git_roots), None)
                 if root is None:
@@ -387,6 +391,7 @@ def sync_all(
     local_repos_path: str = "",
     include_patterns: list[str] | None = None,
     exclude: list[str] | None = None,
+    exclude_dirs: list[str] | None = None,
     only: str | None = None,
 ) -> dict:
     """Sync matching files to ~/.synaptex/projects/.
@@ -398,7 +403,7 @@ def sync_all(
     _log(f"{'[DRY-RUN] ' if dry_run else ''}sync_all started — {forge_type}")
 
     if forge_type == "local":
-        result = _local_sync(local_repos_path or "~/projects", dry_run, patterns, _exclude, only)
+        result = _local_sync(local_repos_path or "~/projects", dry_run, patterns, _exclude, only, exclude_dirs)
         _log(
             f"sync_all done — {len(result['synced'])} synced, "
             f"{len(result['skipped'])} skipped, {len(result['warnings'])} warnings"
