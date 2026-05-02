@@ -417,16 +417,21 @@ def status():
 
     click.echo("=== Synaptex Status ===\n")
 
+    # --- Git provider ---
     forge_type = cfg.get("FORGE_TYPE", "forgejo")
     token = cfg.get("FORGE_TOKEN", "")
     click.echo(f"Forge type    : {forge_type}")
-    click.echo(f"Forge URL     : {cfg.get('FORGE_URL', '⚠ not set')}")
-    click.echo(f"Forge token   : {'✓ set' if token and token not in ('xxx', 'your-token-here') else '⚠ not configured'}")
+    if forge_type == "local":
+        click.echo(f"Local repos   : {cfg.get('LOCAL_REPOS_PATH', '⚠ not set')}")
+    else:
+        click.echo(f"Forge URL     : {cfg.get('FORGE_URL', '⚠ not set')}")
+        click.echo(f"Forge token   : {'✓ set' if token and token not in ('xxx', 'your-token-here') else '⚠ not configured'}")
 
+    # --- Ollama ---
     host = cfg.get("OLLAMA_BASE_URL", "")
     api_type = cfg.get("OLLAMA_API_TYPE", "ollama")
+    embed_model = cfg.get("OLLAMA_EMBED_MODEL", "")
     click.echo(f"\nOllama host   : {host or '⚠ not set'}")
-    click.echo(f"API type      : {api_type}")
     if host:
         try:
             if api_type == "openai":
@@ -436,29 +441,64 @@ def status():
                 r = requests.get(f"{host}/api/tags", timeout=5)
                 models = [m["name"] for m in r.json().get("models", [])]
             model_names_bare = {m.split(":")[0] for m in models}
-            embed_model = cfg.get("OLLAMA_EMBED_MODEL", "")
             ok = "✓" if (embed_model in models or embed_model in model_names_bare) else "⚠ not found"
             click.echo(f"Ollama        : ✓ {len(models)} models")
             click.echo(f"Embed model   : {embed_model} [{ok}]")
         except Exception as e:
             click.echo(f"Ollama        : ✗ {e}")
 
+    # --- Search backend ---
     backend = cfg.get("SYNAPTEX_SEARCH_BACKEND", "embed")
-    click.echo(f"Search backend: {backend}")
-
     if backend == "leann":
-        from search import LEANN_INDEX_DIR
-        meta = LEANN_INDEX_DIR / "leann.meta.json"
-        click.echo(f"\nLeann index   : {LEANN_INDEX_DIR} ({'✓ exists' if meta.exists() else '⚠ empty'})")
+        try:
+            from search import _leann_check_import
+            _leann_check_import()
+            backend_status = "✓ disponible"
+        except ImportError:
+            backend_status = "⚠ non installé (pip install leann-core leann-backend-hnsw) — fallback: embed"
     else:
-        from embed import INDEX_DB
-        click.echo(f"\nIndex DB      : {INDEX_DB} ({'✓ exists' if INDEX_DB.exists() else '⚠ empty'})")
+        backend_status = "✓"
+    click.echo(f"\nSearch backend: {backend} [{backend_status}]")
 
-    if cfg.get("FORGE_TYPE") == "local":
-        click.echo(f"Local repos   : {cfg.get('LOCAL_REPOS_PATH', '⚠ not set')}")
+    # --- Index ---
+    from embed import INDEX_DB
+    if INDEX_DB.exists():
+        import sqlite3 as _sqlite3
+        try:
+            conn = _sqlite3.connect(INDEX_DB)
+            doc_count = conn.execute(
+                "SELECT COUNT(DISTINCT repo || '/' || path) FROM docs"
+            ).fetchone()[0]
+            conn.close()
+            size_kb = INDEX_DB.stat().st_size // 1024
+            click.echo(f"Index DB      : ✓ {doc_count} documents | {size_kb} KB")
+        except Exception:
+            click.echo(f"Index DB      : {INDEX_DB} (illisible)")
+    else:
+        click.echo(f"Index DB      : ⚠ vide (lancer synaptex sync)")
 
-    projects = list((SYNAPTEX_DIR / "projects").iterdir()) if (SYNAPTEX_DIR / "projects").exists() else []
-    click.echo(f"Projects sync : {len(projects)}")
+    # --- Memory sheets ---
+    memory_dir = SYNAPTEX_DIR / "memory"
+    memory_count = len(list(memory_dir.glob("*.md"))) if memory_dir.exists() else 0
+    click.echo(f"Memory sheets : {memory_count} fiches")
+
+    # --- Projets synced ---
+    projects_dir = SYNAPTEX_DIR / "projects"
+    projects = list(projects_dir.iterdir()) if projects_dir.exists() else []
+    click.echo(f"Projects sync : {len(projects)} repos")
+
+    # --- Dernier sync ---
+    from forge import SYNC_LOG
+    if SYNC_LOG.exists():
+        lines = SYNC_LOG.read_text().splitlines()
+        last_lines = [l for l in reversed(lines) if "sync_all done" in l]
+        if last_lines:
+            ts = last_lines[0].split("  ")[0]
+            click.echo(f"Dernier sync  : {ts}")
+        else:
+            click.echo(f"Dernier sync  : (log présent, aucun sync terminé)")
+    else:
+        click.echo(f"Dernier sync  : jamais")
 
 
 def _split_paths(raw: str) -> list[str]:
