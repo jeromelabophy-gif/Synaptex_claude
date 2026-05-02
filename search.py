@@ -204,7 +204,12 @@ def search(query: str, cfg: dict, top_k: int = 5) -> list[dict]:
         try:
             _leann_check_import()
             return leann_search(query, cfg, top_k)
-        except ImportError:
+        except ImportError as exc:
+            import warnings
+            warnings.warn(
+                f"leann non disponible — fallback sur embed. Cause : {exc}",
+                stacklevel=2,
+            )
             backend = "embed"
     if backend == "fts5":
         return fts5_search(query, cfg, top_k)
