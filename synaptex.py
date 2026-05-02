@@ -416,5 +416,82 @@ def status():
     click.echo(f"Projects sync : {len(projects)}")
 
 
+def _split_paths(raw: str) -> list[str]:
+    return [p.strip() for p in raw.split(":") if p.strip()]
+
+
+def _normalize_path(p: str) -> str:
+    return str(Path(p).expanduser().resolve())
+
+
+def _write_local_repos_path(paths: list[str]) -> None:
+    """Rewrite LOCAL_REPOS_PATH in ~/.synaptex/.env, preserving other lines."""
+    SYNAPTEX_DIR.mkdir(parents=True, exist_ok=True)
+    new_value = ":".join(paths)
+    if not ENV_FILE.exists():
+        ENV_FILE.write_text(f"LOCAL_REPOS_PATH={new_value}\n")
+        return
+    lines = ENV_FILE.read_text().splitlines()
+    found = False
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("LOCAL_REPOS_PATH="):
+            lines[i] = f"LOCAL_REPOS_PATH={new_value}"
+            found = True
+            break
+    if not found:
+        lines.append(f"LOCAL_REPOS_PATH={new_value}")
+    ENV_FILE.write_text("\n".join(lines) + "\n")
+
+
+@cli.command()
+def paths():
+    """List configured local repo paths."""
+    cfg = _cfg()
+    raw = cfg.get("LOCAL_REPOS_PATH", "")
+    items = _split_paths(raw)
+    if not items:
+        click.echo("(no LOCAL_REPOS_PATH configured)")
+        return
+    for p in items:
+        resolved = _normalize_path(p)
+        mark = "✓" if Path(resolved).exists() else "✗"
+        click.echo(f"  {mark} {resolved}")
+
+
+@cli.command()
+@click.argument("path")
+def add(path: str):
+    """Add a local repo path to LOCAL_REPOS_PATH (dedup, persisted in .env)."""
+    new = _normalize_path(path)
+    if not Path(new).exists():
+        click.echo(f"⚠ Path does not exist: {new}", err=True)
+        sys.exit(1)
+    cfg = _cfg()
+    current = [_normalize_path(p) for p in _split_paths(cfg.get("LOCAL_REPOS_PATH", ""))]
+    if new in current:
+        click.echo(f"= already present: {new}")
+        return
+    current.append(new)
+    _write_local_repos_path(current)
+    click.echo(f"✓ added: {new}")
+    click.echo(f"  LOCAL_REPOS_PATH now has {len(current)} path(s)")
+
+
+@cli.command()
+@click.argument("path")
+def remove(path: str):
+    """Remove a local repo path from LOCAL_REPOS_PATH."""
+    target = _normalize_path(path)
+    cfg = _cfg()
+    current = [_normalize_path(p) for p in _split_paths(cfg.get("LOCAL_REPOS_PATH", ""))]
+    if target not in current:
+        click.echo(f"✗ not present: {target}", err=True)
+        sys.exit(1)
+    current.remove(target)
+    _write_local_repos_path(current)
+    click.echo(f"✓ removed: {target}")
+    click.echo(f"  LOCAL_REPOS_PATH now has {len(current)} path(s)")
+
+
 if __name__ == "__main__":
     cli()

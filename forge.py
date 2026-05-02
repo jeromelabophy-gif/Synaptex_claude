@@ -242,33 +242,57 @@ def _local_sync(
     exclude: list[str] | None = None,
     only: str | None = None,
 ) -> dict:
-    """Scan LOCAL_REPOS_PATH for git repos and read matching files directly."""
-    base = Path(repos_path).expanduser().resolve()
+    """Scan one or more local paths (`:`-separated) for repos and read matching files.
+
+    A directory counts as a repo if it contains a `.git/` subdir OR a file
+    matching one of the include patterns directly inside it (vault mode).
+    """
     patterns = include_patterns or ["CLAUDE.md"]
     _exclude = exclude or []
     result: dict = {"synced": [], "skipped": [], "warnings": []}
 
-    if not base.exists():
-        _log(f"  ✗ LOCAL_REPOS_PATH does not exist: {base}")
+    raw_paths = [p.strip() for p in str(repos_path).split(":") if p.strip()]
+    bases: list[Path] = []
+    for rp in raw_paths:
+        b = Path(rp).expanduser().resolve()
+        if not b.exists():
+            _log(f"  ✗ LOCAL_REPOS_PATH entry does not exist: {b}")
+            continue
+        bases.append(b)
+    if not bases:
         return result
 
-    # Find all git repos (directories containing .git/)
-    git_dirs = [p.parent for p in base.rglob(".git") if p.is_dir()]
-    _log(f"  {len(git_dirs)} git repos found in {base}")
+    # Per repo_root → list of pattern files. Repo roots come from two sources:
+    # (1) .git/ parent dirs (existing behavior, files under it use rglob)
+    # (2) directories directly containing a pattern file (vault mode)
+    repo_files: dict[Path, list[Path]] = {}
+
+    for base in bases:
+        git_roots = {p.parent for p in base.rglob(".git") if p.is_dir()}
+
+        # Collect pattern files; assign each to nearest git_root ancestor,
+        # else to its immediate parent (vault mode).
+        for pat in patterns:
+            for f in base.rglob(pat):
+                if not f.is_file() or ".git" in f.parts:
+                    continue
+                root = next((a for a in [f.parent, *f.parents] if a in git_roots), None)
+                if root is None:
+                    root = f.parent
+                repo_files.setdefault(root, []).append(f)
+
+    _log(f"  {len(repo_files)} repos found across {len(bases)} path(s)")
 
     PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    for repo_dir in sorted(git_dirs):
+    for repo_dir in sorted(repo_files.keys()):
         name = repo_dir.name
         if only and name != only:
             continue
         if name in _exclude:
             result["skipped"].append(name)
             continue
-        md_files: list[Path] = []
-        for pat in patterns:
-            md_files.extend(p for p in repo_dir.rglob(pat) if ".git" not in p.parts)
-        md_files = sorted(set(md_files))
+        md_files = sorted(set(repo_files[repo_dir]))
 
         if not md_files:
             result["skipped"].append(name)
