@@ -280,7 +280,7 @@ def _local_sync(
                 if not f.is_file() or ".git" in f.parts:
                     continue
                 if _exclude_dirs & set(f.parts):
-                    matched_dir = (_exclude_dirs & set(f.parts)).pop()
+                    matched_dir = next(p for p in f.parts if p in _exclude_dirs)
                     if verbose:
                         _log(f"  [skip] {f} — excluded dir: {matched_dir}")
                     continue
