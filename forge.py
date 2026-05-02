@@ -321,6 +321,8 @@ def _local_sync(
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(content)
             (dest.parent / f"{dest.name}.sha256").write_text(checksum)
+            is_vault = not (repo_dir / ".git").exists()
+            (dest.parent / ".synaptex_mode").write_text("vault" if is_vault else "git")
             _log(f"  ✓ {name}/{path}")
             for w in warnings:
                 _log(f"  ℹ {w}")

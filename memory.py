@@ -89,9 +89,12 @@ def generate_index(projects_dir: Path | None = None) -> Path:
     for md_file in projects_dir.rglob("CLAUDE.md"):
         repo = md_file.parts[len(projects_dir.parts)]
         content = md_file.read_text(errors="replace")
+        mode_file = projects_dir / repo / ".synaptex_mode"
+        mode = mode_file.read_text().strip() if mode_file.exists() else "git"
         repos[repo] = {
             "stack": _detect_stack(content),
             "deps": _detect_deps(content),
+            "mode": mode,
         }
 
     # Compléter avec les fiches mémoire existantes
@@ -129,9 +132,10 @@ def generate_index(projects_dir: Path | None = None) -> Path:
     ]
 
     for repo, info in sorted(repos.items()):
+        badge = " 🗂 vault" if info.get("mode") == "vault" else " git"
         stack_str = f" — {', '.join(info['stack'])}" if info["stack"] else ""
         deps_str = f" | dépend de : {', '.join(f'[[{d}]]' for d in info['deps'])}" if info["deps"] else ""
-        lines.append(f"- [[{repo}]]{stack_str}{deps_str}")
+        lines.append(f"- [[{repo}]]{badge}{stack_str}{deps_str}")
 
     dest = SYNAPTEX_DIR / "index.md"
     dest.write_text("\n".join(lines) + "\n")
