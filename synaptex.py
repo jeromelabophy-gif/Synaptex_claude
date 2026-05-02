@@ -324,11 +324,20 @@ def sync(dry_run: bool, no_index: bool, exclude: tuple, only: str | None):
         model = cfg.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
         click.echo(f"  Indexing via {ollama_host} ({model}, backend={backend})…")
 
-    try:
-        count = rebuild_index(projects_dir, cfg)
-        click.echo(f"  ✓ {count} documents indexed")
-    except Exception as exc:
-        click.echo(f"  ⚠ Indexing failed: {exc}", err=True)
+    import warnings as _warnings
+    with _warnings.catch_warnings(record=True) as caught:
+        _warnings.simplefilter("always")
+        try:
+            count, backend_used = rebuild_index(projects_dir, cfg)
+            if caught:
+                for w in caught:
+                    click.echo(f"  ⚠ {w.message}", err=True)
+                click.echo(f"  ✓ {count} documents indexés (fallback: {backend_used})")
+            else:
+                click.echo(f"  ✓ {count} documents indexés ({backend_used})")
+        except Exception as exc:
+            click.echo(f"  ✗ Indexation échouée : {exc}", err=True)
+            sys.exit(1)
 
 
 @cli.command(name="map")

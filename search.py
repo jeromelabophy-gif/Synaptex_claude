@@ -165,16 +165,28 @@ def leann_search(query: str, cfg: dict, top_k: int = 5) -> list[dict]:
 # Router — public API
 # ---------------------------------------------------------------------------
 
-def rebuild_index(projects_dir: Path, cfg: dict) -> int:
-    """Route to the configured search backend."""
+def rebuild_index(projects_dir: Path, cfg: dict) -> tuple[int, str]:
+    """Route to the configured search backend. Returns (count, backend_used).
+
+    Falls back to embed if leann is configured but not installed.
+    """
     backend = cfg.get("SYNAPTEX_SEARCH_BACKEND", "embed")
     if backend == "leann":
-        return leann_rebuild(projects_dir, cfg)
+        try:
+            _leann_check_import()
+            return leann_rebuild(projects_dir, cfg), "leann"
+        except ImportError as exc:
+            import warnings
+            warnings.warn(
+                f"leann non disponible — fallback sur embed. Cause : {exc}",
+                stacklevel=2,
+            )
+            backend = "embed"
     if backend == "fts5":
-        return fts5_rebuild(projects_dir, cfg)
-    # embed (default)
+        return fts5_rebuild(projects_dir, cfg), "fts5"
+    # embed (default ou fallback)
     from embed import rebuild_index as _embed_rebuild  # noqa: PLC0415
-    return _embed_rebuild(
+    count = _embed_rebuild(
         projects_dir,
         ollama_host=cfg.get("OLLAMA_BASE_URL", ""),
         model=cfg.get("OLLAMA_EMBED_MODEL", "nomic-embed-text"),
@@ -182,16 +194,20 @@ def rebuild_index(projects_dir: Path, cfg: dict) -> int:
         api_type=cfg.get("OLLAMA_API_TYPE", "ollama"),
         api_key=cfg.get("OLLAMA_API_KEY") or None,
     )
+    return count, "embed"
 
 
 def search(query: str, cfg: dict, top_k: int = 5) -> list[dict]:
-    """Route to the configured search backend."""
+    """Route to the configured search backend. Falls back to embed if leann missing."""
     backend = cfg.get("SYNAPTEX_SEARCH_BACKEND", "embed")
     if backend == "leann":
-        return leann_search(query, cfg, top_k)
+        try:
+            _leann_check_import()
+            return leann_search(query, cfg, top_k)
+        except ImportError:
+            backend = "embed"
     if backend == "fts5":
         return fts5_search(query, cfg, top_k)
-    # embed (default)
     from embed import search as _embed_search  # noqa: PLC0415
     return _embed_search(
         query,
